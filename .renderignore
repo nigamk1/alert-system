@@ -1,0 +1,37 @@
+# Local development files
+.env
+.env.local
+.env.development
+.env.test
+
+# CSV data files (will be created on server)
+*.csv
+
+# Log files
+*.log
+logs/
+
+# Development dependencies
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Test files
+test-*.js
+diagnose.js
+
+# Documentation (optional - remove if you want docs deployed)
+# *.md
+# docs/

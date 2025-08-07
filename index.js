@@ -1,5 +1,6 @@
 const WebSocket = require('ws');
 const https = require('https');
+const http = require('http');
 const { v4: uuidv4 } = require('uuid');
 const AlertManager = require('./alert-manager');
 const MarketHours = require('./market-hours');
@@ -645,6 +646,58 @@ class UpstoxDataClient {
 async function main() {
     console.log('🚀 Starting Upstox Nifty 50 Real-time Candle Generator');
     console.log('='.repeat(60));
+
+    // Start health check server for Render deployment
+    const PORT = process.env.PORT || 3000;
+    const server = http.createServer((req, res) => {
+        if (req.url === '/health') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                status: 'healthy',
+                timestamp: new Date().toISOString(),
+                uptime: process.uptime(),
+                memory: process.memoryUsage(),
+                environment: process.env.NODE_ENV || 'development'
+            }));
+        } else if (req.url === '/') {
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Upstox Nifty 50 Alert System</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+                        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                        .status { padding: 10px; border-radius: 5px; margin: 10px 0; }
+                        .healthy { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+                        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h1>🚀 Upstox Nifty 50 Alert System</h1>
+                        <div class="status healthy">✅ System Status: Running</div>
+                        <div class="status info">📊 Real-time monitoring of Nifty 50 Index</div>
+                        <div class="status info">🕯️ Generating 5-minute OHLC candles</div>
+                        <div class="status info">📱 EMA breakout alerts via Telegram</div>
+                        <p><strong>Environment:</strong> ${process.env.NODE_ENV || 'development'}</p>
+                        <p><strong>Uptime:</strong> ${Math.floor(process.uptime())} seconds</p>
+                        <p><strong>Health Check:</strong> <a href="/health">/health</a></p>
+                    </div>
+                </body>
+                </html>
+            `);
+        } else {
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('Not Found');
+        }
+    });
+
+    server.listen(PORT, () => {
+        console.log(`🌐 Health check server running on port ${PORT}`);
+        console.log(`📊 Health check endpoint: http://localhost:${PORT}/health`);
+    });
 
     // Check for access token
     const accessToken = process.env.UPSTOX_ACCESS_TOKEN;
