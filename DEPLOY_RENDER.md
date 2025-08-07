@@ -1,6 +1,6 @@
-# 🚀 Render Deployment Guide
+# 🚀 Render Deployment Guide (Updated)
 
-This guide will help you deploy the Upstox Nifty 50 Alert System on Render.
+This guide will help you deploy the Upstox Nifty 50 Alert System on Render without using render.yaml.
 
 ## Prerequisites
 
@@ -15,28 +15,163 @@ This guide will help you deploy the Upstox Nifty 50 Alert System on Render.
    ```bash
    git add .
    git commit -m "Add Render deployment configuration"
-   git push origin main
+   git push origin deploy
    ```
 
-## Step 2: Deploy on Render
+## Step 2: Deploy on Render (Manual Setup)
 
-### Option A: Using render.yaml (Recommended)
-
-1. In your Render dashboard, click **"New"** → **"Blueprint"**
-2. Connect your GitHub repository
-3. Render will automatically detect the `render.yaml` file
-4. Click **"Apply"** to create the service
-
-### Option B: Manual Setup
+### Create New Web Service
 
 1. In your Render dashboard, click **"New"** → **"Web Service"**
-2. Connect your GitHub repository
-3. Configure the service:
+2. Connect your GitHub repository (`nigamk1/alert-system`)
+3. Select branch: **"deploy"**
+4. Configure the service:
+
+   **Basic Settings:**
    - **Name**: `upstox-nifty50-alert-system`
    - **Runtime**: `Node`
+   - **Region**: Choose closest to you
+   - **Branch**: `deploy`
+
+   **Build & Deploy:**
+   - **Root Directory**: *(leave empty)*
    - **Build Command**: `npm install`
    - **Start Command**: `npm start`
+
+   **Plan:**
    - **Instance Type**: `Starter` (Free tier)
+
+## Step 3: Configure Environment Variables
+
+In your Render service dashboard, go to **Environment** tab and add:
+
+| Variable Name | Value | Required |
+|---------------|-------|----------|
+| `NODE_ENV` | `production` | ✅ |
+| `LOG_LEVEL` | `info` | ✅ |
+| `UPSTOX_ACCESS_TOKEN` | `your_actual_token_here` | ✅ |
+| `TELEGRAM_BOT_TOKEN` | `your_bot_token_here` | ✅ |
+| `TELEGRAM_CHAT_ID` | `your_chat_id_here` | ✅ |
+
+> ⚠️ **Important**: Don't include quotes around the values. Paste the actual tokens.
+
+## Step 4: Deploy
+
+1. Click **"Create Web Service"**
+2. Wait for deployment to complete
+3. Check logs for any errors
+
+## Step 5: Verify Deployment
+
+### Health Check
+Visit: `https://your-service-name.onrender.com/health`
+
+Expected response:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-08-07T10:45:00.000Z",
+  "uptime": 120,
+  "memory": {...},
+  "environment": "production"
+}
+```
+
+### Main Page
+Visit: `https://your-service-name.onrender.com/`
+
+Should show the application status page.
+
+## Expected Build Output
+
+```
+==> Cloning from https://github.com/nigamk1/alert-system
+==> Checking out commit in branch deploy
+==> Using Node.js version 22.16.0
+==> Running build command 'npm install'...
+npm install
+added X packages from Y contributors and audited Z packages in Xs
+found 0 vulnerabilities
+==> Build succeeded 🎉
+==> Starting service with 'npm start'...
+🚀 Starting Upstox Nifty 50 Real-time Candle Generator
+🌐 Health check server running on port 10000
+```
+
+## Troubleshooting
+
+### Build Fails
+1. **Check Node.js version**: Should be 20+ (specified in package.json)
+2. **Verify dependencies**: All packages should be in dependencies, not devDependencies
+3. **Check build logs**: Look for specific error messages
+
+### Service Won't Start
+1. **Environment variables**: Ensure all required vars are set
+2. **Port configuration**: App should use `process.env.PORT`
+3. **Dependencies**: Check if all runtime dependencies are installed
+
+### No Health Response
+1. **Check service URL**: Should be `https://your-app.onrender.com`
+2. **Wait for deployment**: Initial deployment can take 2-3 minutes
+3. **Check logs**: Look for startup errors
+
+## Manual Deployment Alternative
+
+If web interface doesn't work, use Render CLI:
+
+```bash
+# Install Render CLI
+npm install -g @render/cli
+
+# Login
+render login
+
+# Create service
+render services create
+
+# Deploy
+render deploy
+```
+
+## Configuration Files
+
+The following files support deployment:
+
+1. **`package.json`** - Build and start scripts
+2. **`Dockerfile`** - Container configuration (optional)
+3. **`.renderignore`** - Files to exclude
+4. **`.env.production`** - Environment template
+
+## Important Notes
+
+### Free Tier Limitations
+- Service sleeps after 15 minutes of inactivity
+- 750 hours per month limit
+- Cold start delay when waking up
+
+### Production Optimizations
+- Service auto-restarts on crashes
+- Health check monitors uptime
+- Market hours detection prevents unnecessary usage
+
+### Security
+- Never commit tokens to Git
+- Use Render's encrypted environment variables
+- Rotate tokens regularly
+
+## Support
+
+If deployment fails:
+1. Check this troubleshooting guide
+2. Review Render build logs
+3. Verify all environment variables
+4. Test locally with same configuration
+
+---
+
+**Deployment Status**: Ready for manual setup
+**Estimated Deploy Time**: 3-5 minutes
+**Health Check**: `/health` endpoint
 
 ## Step 3: Configure Environment Variables
 
