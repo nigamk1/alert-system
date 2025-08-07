@@ -2,6 +2,7 @@ const WebSocket = require('ws');
 const https = require('https');
 const { v4: uuidv4 } = require('uuid');
 const AlertManager = require('./alert-manager');
+const MarketHours = require('./market-hours');
 require('dotenv').config();
 
 class UpstoxDataClient {
@@ -16,6 +17,11 @@ class UpstoxDataClient {
         this.pollInterval = 5000; // 5 seconds for REST API
         this.isRunning = false;
         
+        // Market hours utility
+        this.marketHours = new MarketHours();
+        this.marketCheckInterval = null;
+        this.isMarketOpen = false;
+        
         // Nifty 50 instrument key (working format confirmed)
         this.instrumentKey = 'NSE_INDEX|Nifty 50';
         
@@ -27,7 +33,7 @@ class UpstoxDataClient {
         
         // Alert system
         this.alertManager = null;
-        this.initializeAlertSystem();
+        this.alertSystemReady = false;
         
         // Bind methods
         this.connect = this.connect.bind(this);
@@ -55,9 +61,11 @@ class UpstoxDataClient {
             await this.alertManager.initialize();
             
             console.log('🚨 Alert system initialized successfully');
+            this.alertSystemReady = true;
         } catch (error) {
             console.error('❌ Failed to initialize alert system:', error.message);
             console.log('📝 Continuing without alerts...');
+            this.alertSystemReady = true; // Continue even without alerts
         }
     }
 
@@ -98,7 +106,99 @@ class UpstoxDataClient {
         }
     }
 
+    /**
+     * Check if market is currently open and update status
+     */
+    checkMarketStatus() {
+        console.log('🔍 Checking market status...');
+        const status = this.marketHours.isMarketOpen('EQUITY', true);
+        const previousStatus = this.isMarketOpen;
+        this.isMarketOpen = status.isOpen;
+
+        // Log status change
+        if (previousStatus !== this.isMarketOpen) {
+            console.log('\n' + '='.repeat(60));
+            console.log(this.marketHours.getMarketStatusMessage());
+            console.log('='.repeat(60) + '\n');
+
+            if (this.isMarketOpen) {
+                console.log('🟢 Market opened - Starting data collection...');
+                this.startDataCollection();
+            } else {
+                console.log('🔴 Market closed - Stopping data collection...');
+                this.stopDataCollection();
+            }
+        } else {
+            // Always show status on first check or periodically
+            console.log(this.marketHours.getMarketStatusMessage());
+        }
+
+        return status;
+    }
+
+    /**
+     * Start data collection (WebSocket or REST polling)
+     */
+    startDataCollection() {
+        if (!this.isRunning) {
+            this.isRunning = true;
+            
+            // Initialize candle tracking when starting data collection
+            if (!this.currentCandle) {
+                this.initializeCandleTracking();
+            }
+            
+            this.connect();
+        }
+    }
+
+    /**
+     * Stop data collection
+     */
+    stopDataCollection() {
+        if (this.isRunning) {
+            this.isRunning = false;
+            if (this.ws && this.isConnected) {
+                this.ws.close(1000, 'Market closed');
+            }
+            if (this.pollInterval) {
+                clearInterval(this.pollInterval);
+            }
+        }
+    }
+
+    /**
+     * Start periodic market hours checking
+     */
+    startMarketMonitoring() {
+        // Check market status immediately
+        this.checkMarketStatus();
+
+        // Check every minute
+        this.marketCheckInterval = setInterval(() => {
+            this.checkMarketStatus();
+        }, 60 * 1000); // 1 minute
+
+        console.log('⏰ Market hours monitoring started (checking every minute)');
+    }
+
+    /**
+     * Stop market hours monitoring
+     */
+    stopMarketMonitoring() {
+        if (this.marketCheckInterval) {
+            clearInterval(this.marketCheckInterval);
+            this.marketCheckInterval = null;
+        }
+    }
+
     connect() {
+        // Only connect if market is open
+        if (!this.isMarketOpen) {
+            console.log('⚠️ Skipping connection - Market is closed');
+            return;
+        }
+
         if (this.useRestFallback) {
             this.startRestPolling();
             return;
@@ -228,13 +328,24 @@ class UpstoxDataClient {
         const timeToNextCandle = this.currentCandle.endTime.getTime() - now.getTime();
         
         setTimeout(() => {
-            this.generateCandle();
-            this.initializeNextCandle();
-            this.setCandleTimer();
+            // Only generate candle if market is open
+            if (this.isMarketOpen) {
+                this.generateCandle();
+                this.initializeNextCandle();
+                this.setCandleTimer();
+            } else {
+                console.log('⚠️ Skipping candle timer - Market is closed');
+            }
         }, timeToNextCandle);
     }
 
     processTick(tick) {
+        // Only process ticks during market hours
+        if (!this.isMarketOpen) {
+            console.log('⚠️ Ignoring tick - Market is closed');
+            return;
+        }
+
         if (!this.currentCandle) {
             return;
         }
@@ -264,6 +375,12 @@ class UpstoxDataClient {
     }
 
     generateCandle() {
+        // Only generate candles during market hours
+        if (!this.isMarketOpen) {
+            console.log('⚠️ Skipping candle generation - Market is closed');
+            return;
+        }
+
         if (!this.currentCandle || this.currentCandle.open === null) {
             console.log('⚠️ No ticks received for this candle period');
             return;
@@ -374,7 +491,12 @@ class UpstoxDataClient {
         console.log('='.repeat(60));
 
         this.isRunning = true;
-        this.initializeCandleTracking();
+        
+        // Only initialize candle tracking if not already done
+        if (!this.currentCandle) {
+            this.initializeCandleTracking();
+        }
+        
         this.pollData();
     }
 
@@ -430,6 +552,14 @@ class UpstoxDataClient {
 
     async pollData() {
         if (!this.isRunning) return;
+
+        // Check if market is open before polling
+        if (!this.isMarketOpen) {
+            console.log('⚠️ Skipping data poll - Market is closed');
+            // Schedule next poll check (still need to check periodically if market opens)
+            setTimeout(() => this.pollData(), this.pollInterval);
+            return;
+        }
 
         try {
             const quoteData = await this.fetchQuote();
@@ -491,6 +621,9 @@ class UpstoxDataClient {
             this.ws.close();
         }
         
+        // Stop market monitoring
+        this.stopMarketMonitoring();
+        
         // Shutdown alert system
         if (this.alertManager) {
             this.alertManager.shutdown().catch(error => {
@@ -509,7 +642,7 @@ class UpstoxDataClient {
 }
 
 // Main application
-function main() {
+async function main() {
     console.log('🚀 Starting Upstox Nifty 50 Real-time Candle Generator');
     console.log('='.repeat(60));
 
@@ -545,8 +678,13 @@ function main() {
         process.exit(0);
     });
 
-    // Start connection (will try WebSocket first, then fallback to REST)
-    client.connect();
+    // Initialize alert system first, then start market monitoring
+    console.log('🔄 Initializing alert system...');
+    await client.initializeAlertSystem();
+    
+    // Start market monitoring (will connect automatically when market opens)
+    console.log('⏰ Starting market hours monitoring...');
+    client.startMarketMonitoring();
 }
 
 // Run the application
