@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: upstox-nifty50-alert-system
+    runtime: node
+    repo: https://github.com/nigamk1/alert-system.git
+    branch: deploy
+    buildCommand: npm install
+    startCommand: npm start
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
