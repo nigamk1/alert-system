@@ -18,13 +18,15 @@ class AlertManager {
             enableAlerts: true,
             minConsecutiveCandles: 1, // Minimum consecutive candles above EMA before alert
             alertCooldownMinutes: 5,
-            debugMode: true
+            debugMode: process.env.NODE_ENV !== 'production' // Disable debug in production
         };
 
         console.log('🚨 Alert Manager initialized');
         console.log(`   📱 Telegram Bot: ${telegramConfig.botToken ? 'Configured' : 'Not configured'}`);
         console.log(`   📊 EMA Period: 5`);
         console.log(`   ⏰ Alert Cooldown: ${this.settings.alertCooldownMinutes} minutes`);
+        console.log(`   🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`   🔍 Debug Mode: ${this.settings.debugMode ? 'Enabled' : 'Disabled'}`);
     }
 
     async initialize() {

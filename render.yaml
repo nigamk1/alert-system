@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: nifty50-alert-system
+    env: node
+    repo: https://github.com/nigamk1/alert-system.git
+    branch: production
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    region: singapore
+    environmentVariables:
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: UPSTOX_ACCESS_TOKEN
+        sync: false  # Set manually in Render dashboard
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false  # Set manually in Render dashboard
+      - key: TELEGRAM_CHAT_ID
+        sync: false  # Set manually in Render dashboard
+    healthCheckPath: /health
+    numInstances: 1
+    scaling:
+      minInstances: 1
+      maxInstances: 1
+    disk:
+      name: nifty50-data
+      sizeGB: 1
+      mountPath: /opt/render/project/src/data

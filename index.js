@@ -1,5 +1,6 @@
 const WebSocket = require('ws');
 const https = require('https');
+const http = require('http');
 const { v4: uuidv4 } = require('uuid');
 const AlertManager = require('./alert-manager');
 require('dotenv').config();
@@ -511,6 +512,7 @@ class UpstoxDataClient {
 // Main application
 function main() {
     console.log('🚀 Starting Upstox Nifty 50 Real-time Candle Generator');
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log('='.repeat(60));
 
     // Check for access token
@@ -532,6 +534,11 @@ function main() {
     // Initialize client
     const client = new UpstoxDataClient(accessToken);
     
+    // Start health check server for production deployment
+    if (process.env.NODE_ENV === 'production') {
+        startHealthCheckServer(client);
+    }
+    
     // Handle graceful shutdown
     process.on('SIGINT', () => {
         console.log('\n⚠️ Received SIGINT. Shutting down gracefully...');
@@ -547,6 +554,132 @@ function main() {
 
     // Start connection (will try WebSocket first, then fallback to REST)
     client.connect();
+}
+
+// Health check server for production deployment
+function startHealthCheckServer(client) {
+    const port = process.env.PORT || 3000;
+    
+    const server = http.createServer((req, res) => {
+        // Set CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        
+        if (req.method === 'OPTIONS') {
+            res.writeHead(200);
+            res.end();
+            return;
+        }
+        
+        if (req.url === '/health' && req.method === 'GET') {
+            // Health check endpoint
+            const status = {
+                status: 'healthy',
+                timestamp: new Date().toISOString(),
+                uptime: process.uptime(),
+                environment: process.env.NODE_ENV,
+                service: 'Nifty 50 Alert System',
+                version: '1.0.0',
+                alerts: {
+                    enabled: client.alertManager ? client.alertManager.getStatus().emaReady : false,
+                    lastUpdate: new Date().toISOString()
+                },
+                data: {
+                    isRunning: client.isRunning,
+                    useRestFallback: client.useRestFallback,
+                    completedCandles: client.completedCandles.length
+                }
+            };
+            
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(status, null, 2));
+            
+        } else if (req.url === '/status' && req.method === 'GET') {
+            // Detailed status endpoint
+            const detailedStatus = {
+                application: 'Nifty 50 Real-time Alert System',
+                version: '1.0.0',
+                environment: process.env.NODE_ENV,
+                timestamp: new Date().toISOString(),
+                uptime: process.uptime(),
+                system: {
+                    memory: process.memoryUsage(),
+                    platform: process.platform,
+                    nodeVersion: process.version
+                },
+                trading: {
+                    instrumentKey: client.instrumentKey,
+                    isConnected: client.isConnected,
+                    isRunning: client.isRunning,
+                    useRestFallback: client.useRestFallback,
+                    completedCandles: client.completedCandles.length,
+                    tickDataPoints: client.tickData.length
+                },
+                alerts: client.alertManager ? client.alertManager.getStatus() : { status: 'not initialized' }
+            };
+            
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(detailedStatus, null, 2));
+            
+        } else if (req.url === '/' && req.method === 'GET') {
+            // Root endpoint with basic info
+            const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nifty 50 Alert System</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .status { color: #28a745; font-weight: bold; }
+        .endpoint { background: #f8f9fa; padding: 10px; margin: 10px 0; border-left: 4px solid #007bff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Nifty 50 Real-time Alert System</h1>
+        <p class="status">✅ Service is running</p>
+        <p><strong>Environment:</strong> ${process.env.NODE_ENV || 'development'}</p>
+        <p><strong>Uptime:</strong> ${Math.floor(process.uptime())} seconds</p>
+        <p><strong>Time:</strong> ${new Date().toISOString()}</p>
+        
+        <h3>📊 Available Endpoints:</h3>
+        <div class="endpoint"><strong>GET /health</strong> - Health check for monitoring</div>
+        <div class="endpoint"><strong>GET /status</strong> - Detailed system status</div>
+        
+        <h3>🎯 Features:</h3>
+        <ul>
+            <li>📈 Real-time Nifty 50 data monitoring</li>
+            <li>🕯️ 5-minute OHLC candle generation</li>
+            <li>📊 5-period EMA calculation and tracking</li>
+            <li>🚨 Intelligent Telegram alerts for EMA breakouts</li>
+            <li>🔄 Automatic WebSocket → REST API fallback</li>
+        </ul>
+    </div>
+</body>
+</html>`;
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(html);
+            
+        } else {
+            // 404 for other routes
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Not found', timestamp: new Date().toISOString() }));
+        }
+    });
+    
+    server.listen(port, () => {
+        console.log(`🌐 Health check server running on port ${port}`);
+        console.log(`📊 Health check: http://localhost:${port}/health`);
+        console.log(`📋 Status page: http://localhost:${port}/status`);
+        console.log(`🏠 Dashboard: http://localhost:${port}/`);
+    });
+    
+    // Handle server errors
+    server.on('error', (error) => {
+        console.error('❌ Health check server error:', error.message);
+    });
 }
 
 // Run the application
