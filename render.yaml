@@ -4,11 +4,19 @@ services:
     runtime: node
     repo: https://github.com/nigamk1/alert-system.git
     branch: deploy
+    rootDir: ./
     buildCommand: npm install
     startCommand: npm start
     plan: starter
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: LOG_LEVEL
         value: info
+      - key: UPSTOX_ACCESS_TOKEN
+        fromSecret: UPSTOX_ACCESS_TOKEN
+      - key: TELEGRAM_BOT_TOKEN
+        fromSecret: TELEGRAM_BOT_TOKEN
+      - key: TELEGRAM_CHAT_ID
+        fromSecret: TELEGRAM_CHAT_ID
