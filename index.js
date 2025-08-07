@@ -511,8 +511,13 @@ class UpstoxDataClient {
 
 // Main application
 function main() {
+    // Set production environment if not already set
+    if (!process.env.NODE_ENV) {
+        process.env.NODE_ENV = 'production';
+    }
+    
     console.log('🚀 Starting Upstox Nifty 50 Real-time Candle Generator');
-    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
     console.log('='.repeat(60));
 
     // Check for access token

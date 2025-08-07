@@ -8,6 +8,7 @@ services:
     startCommand: npm start
     plan: free
     region: singapore
+    node: 18
     environmentVariables:
       - key: NODE_ENV
         value: production
@@ -21,10 +22,3 @@ services:
         sync: false  # Set manually in Render dashboard
     healthCheckPath: /health
     numInstances: 1
-    scaling:
-      minInstances: 1
-      maxInstances: 1
-    disk:
-      name: nifty50-data
-      sizeGB: 1
-      mountPath: /opt/render/project/src/data
