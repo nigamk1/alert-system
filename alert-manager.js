@@ -1,4 +1,3 @@
-// alert-manager.js - Alert Management System
 const TelegramBot = require('./telegram-bot');
 const EMACalculator = require('./ema-calculator');
 
