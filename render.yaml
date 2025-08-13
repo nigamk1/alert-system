@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: upstox-nifty50-alerts
+    env: node
+    region: oregon # You can change this to singapore, frankfurt, ohio, etc.
+    plan: free # Can upgrade to starter ($7/month) or standard ($25/month) for better performance
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        generateValue: true # Render will automatically set the PORT
+      # Add your environment variables here
+      # These need to be set in Render Dashboard under Environment Variables
+      - key: ACCESS_TOKEN
+        sync: false # Set this manually in Render dashboard
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false # Set this manually in Render dashboard
+      - key: TELEGRAM_CHAT_ID
+        sync: false # Set this manually in Render dashboard
+    
+    # Auto-deploy settings
+    autoDeploy: true
+    
+    # Disk storage (if needed for CSV files)
+    disk:
+      name: data
+      mountPath: /app/data
+      sizeGB: 1
+
+# Optional: Background worker service (if you want to separate the alert system)
+# Uncomment if you want to run the alert system as a separate background service
+#  - type: worker
+#    name: upstox-worker
+#    env: node
+#    region: oregon
+#    plan: free
+#    buildCommand: npm install
+#    startCommand: node index.js
+#    envVars:
+#      - key: NODE_ENV
+#        value: production
+#      - key: ACCESS_TOKEN
+#        sync: false
+#      - key: TELEGRAM_BOT_TOKEN
+#        sync: false
+#      - key: TELEGRAM_CHAT_ID
+#        sync: false
+#    autoDeploy: true
