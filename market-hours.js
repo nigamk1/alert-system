@@ -38,11 +38,27 @@ class MarketHours {
      * Get current time in IST
      */
     getCurrentISTTime() {
+        // Use proper timezone conversion to IST (Asia/Kolkata)
         const now = new Date();
-        // Convert to IST (UTC+5:30)
-        const istOffset = 5.5 * 60 * 60 * 1000; // 5 hours 30 minutes in milliseconds
-        const istTime = new Date(now.getTime() + istOffset);
+        const istTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
         return istTime;
+    }
+
+    /**
+     * Get current IST time as formatted string for debugging
+     */
+    getCurrentISTString() {
+        const istTime = this.getCurrentISTTime();
+        return istTime.toLocaleString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
     }
 
     /**
@@ -82,8 +98,14 @@ class MarketHours {
      * Check if market is currently open for a specific session type
      */
     isMarketOpen(sessionType = 'EQUITY', includePreMarket = false) {
+        const istTime = this.getCurrentISTTime();
+        const currentISTString = this.getCurrentISTString();
+        
+        console.log(`🕐 Current IST Time: ${currentISTString}`);
+        
         // First check if it's a trading day
         if (!this.isTradingDay()) {
+            console.log(`📅 Not a trading day (weekend or holiday)`);
             return {
                 isOpen: false,
                 reason: 'Market is closed (weekend or holiday)',
@@ -103,13 +125,20 @@ class MarketHours {
         }
 
         const currentMinutes = this.getCurrentTimeInMinutes();
+        const currentTimeStr = this.getTimeString(currentMinutes);
+        
+        console.log(`⏰ Current time in minutes: ${currentMinutes} (${currentTimeStr})`);
+        console.log(`📊 Checking ${sessionType} market sessions:`);
         
         // Check pre-market session
         if (includePreMarket && sessions.preMarket) {
             const preStart = this.parseTimeToMinutes(sessions.preMarket.start);
             const preEnd = this.parseTimeToMinutes(sessions.preMarket.end);
             
+            console.log(`   Pre-market: ${sessions.preMarket.start} - ${sessions.preMarket.end} (${preStart} - ${preEnd} minutes)`);
+            
             if (currentMinutes >= preStart && currentMinutes < preEnd) {
+                console.log(`✅ Market is OPEN - Pre-market session`);
                 return {
                     isOpen: true,
                     reason: 'Pre-market session',
@@ -123,7 +152,10 @@ class MarketHours {
         const regularStart = this.parseTimeToMinutes(sessions.regular.start);
         const regularEnd = this.parseTimeToMinutes(sessions.regular.end);
         
+        console.log(`   Regular: ${sessions.regular.start} - ${sessions.regular.end} (${regularStart} - ${regularEnd} minutes)`);
+        
         if (currentMinutes >= regularStart && currentMinutes < regularEnd) {
+            console.log(`✅ Market is OPEN - Regular trading session`);
             return {
                 isOpen: true,
                 reason: 'Regular trading session',
@@ -137,7 +169,10 @@ class MarketHours {
             const postStart = this.parseTimeToMinutes(sessions.postMarket.start);
             const postEnd = this.parseTimeToMinutes(sessions.postMarket.end);
             
+            console.log(`   Post-market: ${sessions.postMarket.start} - ${sessions.postMarket.end} (${postStart} - ${postEnd} minutes)`);
+            
             if (currentMinutes >= postStart && currentMinutes < postEnd) {
+                console.log(`✅ Market is OPEN - Post-market session`);
                 return {
                     isOpen: true,
                     reason: 'Post-market session',
@@ -148,6 +183,7 @@ class MarketHours {
         }
 
         // Market is closed
+        console.log(`❌ Market is CLOSED - Outside trading hours`);
         return {
             isOpen: false,
             reason: 'Market is closed (outside trading hours)',
