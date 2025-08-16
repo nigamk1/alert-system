@@ -1,12 +1,6 @@
-/**
- * Backward compatibility wrapper for alert-manager.js
- * Redirects to the new AlertManagerService
- */
-
-const AlertManagerService = require('./src/services/alert-manager-service');
-
-// Export the new service class with the old name for compatibility
-module.exports = AlertManagerService;
+// alert-manager.js - Alert Management System
+const TelegramBot = require('./telegram-bot');
+const EMACalculator = require('./ema-calculator');
 
 class AlertManager {
     constructor(telegramConfig) {
