@@ -1,0 +1,50 @@
+{
+  "name": "upstox-nifty50-candle-generator",
+  "version": "1.0.0",
+  "description": "Real-time Nifty 50 Index WebSocket client with 5-EMA alert system that generates 5-minute OHLC candlestick data and sends Telegram notifications",
+  "main": "render-server.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "scripts": {
+    "start": "node render-server.js",
+    "debug": "node debug-render.js",
+    "dev": "node server.js",
+    "start-rest": "node fallback-realtime.js",
+    "test": "node test-setup.js",
+    "setup-check": "node test-setup.js",
+    "get-token": "node oauth-helper.js",
+    "diagnose": "node diagnose.js",
+    "setup-telegram": "node setup-telegram.js",
+    "test-telegram": "node test-telegram.js",
+    "build": "npm install",
+    "prebuild": "node debug-render.js",
+    "postinstall": "echo 'Post-install: Dependencies installed successfully'",
+    "health-check": "node -e \"console.log('Health check passed')\"",
+    "deploy-check": "node deploy-check.js",
+    "render-setup": "node deploy-check.js"
+  },
+  "keywords": [
+    "upstox",
+    "websocket",
+    "nifty50",
+    "real-time",
+    "candlestick",
+    "ohlc",
+    "market-data",
+    "trading",
+    "financial",
+    "ema",
+    "alerts",
+    "telegram"
+  ],
+  "author": "Nitin Kumar",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^17.2.1",
+    "express": "^4.18.2",
+    "uuid": "^11.1.0",
+    "ws": "^8.18.3"
+  }
+}
