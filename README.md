@@ -109,9 +109,61 @@ npm run test-telegram
 ```
 
 ### 6. Start Application
+
+**Local Development:**
 ```bash
 npm start
 ```
+
+**Or deploy to Netlify:**
+```bash
+npm run netlify-setup
+```
+
+## 🌐 Netlify Deployment
+
+This application can be deployed to Netlify as a serverless application with a web dashboard.
+
+### Quick Deploy to Netlify
+
+1. **Run setup check:**
+   ```bash
+   npm run netlify-setup
+   ```
+
+2. **Push to GitHub:**
+   ```bash
+   git add .
+   git commit -m "Ready for Netlify deployment" 
+   git push origin main
+   ```
+
+3. **Deploy on Netlify:**
+   - Go to [app.netlify.com](https://app.netlify.com)
+   - Click "New site from Git"
+   - Connect your GitHub repository
+   - Set environment variables:
+     - `UPSTOX_ACCESS_TOKEN`
+     - `TELEGRAM_BOT_TOKEN` 
+     - `TELEGRAM_CHAT_ID`
+   - Deploy!
+
+📖 **Detailed Guide:** See [NETLIFY_DEPLOYMENT.md](NETLIFY_DEPLOYMENT.md)
+
+### Netlify Features
+
+- 🌐 **Web Dashboard**: Monitor system status and market data
+- ⚡ **Serverless Functions**: API endpoints for real-time data
+- 🔄 **Auto-deploy**: Automatic deployments from GitHub
+- 🔐 **Environment Variables**: Secure configuration management
+- 📊 **Analytics**: Built-in monitoring and logs
+
+### Netlify URLs Structure
+
+Once deployed, your app will have:
+- **Dashboard**: `https://your-app.netlify.app/`
+- **API Status**: `https://your-app.netlify.app/.netlify/functions/upstox-api/status`
+- **Health Check**: `https://your-app.netlify.app/.netlify/functions/upstox-api/health`
 
 ## 📱 Telegram Bot Setup
 
