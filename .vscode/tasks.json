@@ -1,0 +1,60 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Start Upstox Nifty50 App",
+			"type": "shell",
+			"command": "npm start",
+			"group": "build",
+			"isBackground": false,
+			"problemMatcher": [],
+			"args": [],
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": true,
+				"clear": false
+			}
+		},
+		{
+			"label": "Install Dependencies",
+			"type": "shell",
+			"command": "npm install",
+			"group": "build",
+			"isBackground": false,
+			"problemMatcher": [],
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true
+			}
+		},
+		{
+			"label": "Check Dependencies",
+			"type": "shell",
+			"command": "npm list",
+			"group": "test",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test Connection (Dry Run)",
+			"type": "shell",
+			"command": "node -e \"console.log('Testing Node.js setup...'); console.log('Node version:', process.version); console.log('Environment variables loaded'); require('dotenv').config(); console.log('Required packages:'); try { require('ws'); console.log('✅ ws package found'); } catch(e) { console.log('❌ ws package missing'); } try { require('uuid'); console.log('✅ uuid package found'); } catch(e) { console.log('❌ uuid package missing'); } console.log('Setup verification complete');\"",
+			"group": "test",
+			"isBackground": false,
+			"problemMatcher": [],
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true
+			}
+		}
+	]
+}
