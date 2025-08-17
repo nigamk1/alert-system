@@ -92,7 +92,7 @@ Thumbs.db
 # Generated data files
 *.csv
 *.xlsx
-*.json
+nifty50_candles.json
 data/
 logs/
 
