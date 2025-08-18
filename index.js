@@ -1,5 +1,6 @@
 const WebSocket = require('ws');
 const https = require('https');
+const http = require('http');
 const { v4: uuidv4 } = require('uuid');
 const AlertManager = require('./alert-manager');
 const MarketHours = require('./market-hours');
@@ -664,6 +665,31 @@ async function main() {
 
     // Initialize client
     const client = new UpstoxDataClient(accessToken);
+    
+    // Create HTTP server for health checks (required for Render)
+    const server = http.createServer((req, res) => {
+        if (req.url === '/health' || req.url === '/') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                status: 'healthy',
+                service: 'Nifty 50 Alert System',
+                timestamp: new Date().toISOString(),
+                isConnected: client.isConnected,
+                isMarketOpen: client.isMarketOpen,
+                alertSystemReady: client.alertSystemReady,
+                uptime: process.uptime()
+            }));
+        } else {
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('Not Found');
+        }
+    });
+
+    const PORT = process.env.PORT || 3000;
+    server.listen(PORT, () => {
+        console.log(`🌐 Health check server running on port ${PORT}`);
+        console.log(`🔗 Health check endpoint: http://localhost:${PORT}/health`);
+    });
     
     // Handle graceful shutdown
     process.on('SIGINT', () => {
