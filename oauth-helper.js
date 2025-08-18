@@ -132,11 +132,12 @@ function exchangeCodeForToken(authCode, callback) {
                     console.log('\n🎉 SUCCESS! Access token generated:');
                     console.log('='.repeat(50));
                     console.log('🔑 Access Token:', response.access_token);
+                    console.log('🔄 Refresh Token:', response.refresh_token || 'Not provided');
                     console.log('⏰ Expires in:', response.expires_in, 'seconds');
                     console.log('📅 Valid until:', new Date(Date.now() + response.expires_in * 1000).toISOString());
                     
-                    // Update .env file
-                    updateEnvFile(response.access_token);
+                    // Update .env file with both tokens
+                    updateEnvFile(response.access_token, response.refresh_token);
                     
                     callback(response.access_token);
                 } else {
@@ -161,7 +162,7 @@ function exchangeCodeForToken(authCode, callback) {
 }
 
 // Function to update .env file with new token
-function updateEnvFile(accessToken) {
+function updateEnvFile(accessToken, refreshToken = null) {
     const fs = require('fs');
     const path = require('path');
     
@@ -172,7 +173,7 @@ function updateEnvFile(accessToken) {
         if (fs.existsSync(envPath)) {
             envContent = fs.readFileSync(envPath, 'utf8');
             
-            // Replace existing token or add new one
+            // Replace existing access token or add new one
             if (envContent.includes('UPSTOX_ACCESS_TOKEN=')) {
                 envContent = envContent.replace(
                     /UPSTOX_ACCESS_TOKEN=.*/,
@@ -181,17 +182,38 @@ function updateEnvFile(accessToken) {
             } else {
                 envContent += `\nUPSTOX_ACCESS_TOKEN=${accessToken}\n`;
             }
+
+            // Replace existing refresh token or add new one
+            if (refreshToken) {
+                if (envContent.includes('UPSTOX_REFRESH_TOKEN=')) {
+                    envContent = envContent.replace(
+                        /UPSTOX_REFRESH_TOKEN=.*/,
+                        `UPSTOX_REFRESH_TOKEN=${refreshToken}`
+                    );
+                } else {
+                    envContent += `UPSTOX_REFRESH_TOKEN=${refreshToken}\n`;
+                }
+            }
         } else {
             envContent = `UPSTOX_ACCESS_TOKEN=${accessToken}\n`;
+            if (refreshToken) {
+                envContent += `UPSTOX_REFRESH_TOKEN=${refreshToken}\n`;
+            }
         }
         
         fs.writeFileSync(envPath, envContent);
         console.log('✅ Updated .env file with new access token');
+        if (refreshToken) {
+            console.log('✅ Refresh token also saved for automatic renewal');
+        }
         
     } catch (error) {
         console.log('⚠️ Could not update .env file:', error.message);
         console.log('💡 Please manually add this token to your .env file:');
         console.log(`UPSTOX_ACCESS_TOKEN=${accessToken}`);
+        if (refreshToken) {
+            console.log(`UPSTOX_REFRESH_TOKEN=${refreshToken}`);
+        }
     }
 }
 
